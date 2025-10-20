@@ -1,0 +1,26 @@
+# dependencies
+node_modules/
+
+# env & local config
+.env
+.env.*
+!.env.example
+.vscode/
+.idea/
+
+# builds / caches
+dist/
+build/
+coverage/
+.tmp/
+.cache/
+*.log
+
+# prisma: generated client + engines
+prisma/client/
+.prisma/
+
+# framework-specific (ignore if not used)
+.next/
+.vercel/
+.turbo/
