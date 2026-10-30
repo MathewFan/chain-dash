@@ -1,0 +1,34 @@
+name: Canonical chain checks
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: chaindash
+          POSTGRES_PASSWORD: test-only
+          POSTGRES_DB: chaindash_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U chaindash"
+          --health-interval 2s --health-timeout 2s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://chaindash:test-only@localhost:5432/chaindash_test
+      ALLOW_TEST_DB_RESET: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm}
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npm run db:deploy
+      - run: npm run test:integration
+      - name: Seed twice to verify repeatability
+        run: |
+          # Integration owns this disposable database. Start a fresh schema for the demo seed.
+          npx prisma migrate reset --force --skip-seed
+          npm run seed
+          npm run seed
