@@ -61,3 +61,5 @@ ALLOW_TEST_DB_RESET=1 npm run test:integration
 GitHub CI provisions PostgreSQL 16, applies the checked-in migration, and exercises the API against the real database: concurrent duplicate ingestion, cross-chain identities, rollback after a failed reorg, orphan removal, precise uint256 values, stable pages during append, cursor tampering and invalidation after reorg. Domain tests cover validation and deterministic block digests. No fabricated throughput numbers are presented.
 
 This repository previously referenced a Prisma schema outside the checkout. The new schema is self-contained; existing external databases require a planned migration rather than applying this initial migration blindly. Future extensions include RPC backfill, finalized-head policies, contract metadata and query benchmarks with representative chain data.
+
+Dependency maintenance: Prisma remains pinned to 6.19.3 for its generated-client API. Its CLI-only `@prisma/config` dependency overrides `deepmerge-ts` to 8.0.0 to address GHSA-ggr8-5vv4-36mx. CI exercises client generation, migrations and seeding with this override; review it when upgrading Prisma.
