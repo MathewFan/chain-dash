@@ -11,7 +11,8 @@ test('normalizes addresses and preserves uint256 precision', () => {
   assert.equal(BlockInput.parse({...block, transfers: [{...block.transfers[0], from: '0x' + 'A'.repeat(40)}]}).transfers[0]!.from, address);
 });
 test('rejects duplicate logs, unsafe amounts, malformed identities and heights', () => {
-  for (const bad of [{...block, transfers: [...block.transfers, ...block.transfers]}, {...block, number: '-1'},
+  for (const bad of [{...block, transfers: [...block.transfers, ...block.transfers]}, {...block, number: '-1'}, {...block, number: 'invalid'},
+    {...block, transfers: [{...block.transfers[0], amount: 'invalid'}]},
     {...block, number: '9223372036854775808'}, {...block, hash: '0xwrong'},
     {...block, transfers: [{...block.transfers[0], amount: (2n ** 256n).toString()}]},
     {...block, transfers: [{...block.transfers[0], amount: 1}]}]) assert.equal(BlockInput.safeParse(bad).success, false);

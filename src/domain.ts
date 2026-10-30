@@ -5,8 +5,8 @@ export const ZERO = '0x' + '0'.repeat(64);
 export const Chain = z.enum(['ETH', 'OP', 'BSC', 'POLY', 'ARB']);
 export const Address = z.string().regex(/^0x[0-9a-fA-F]{40}$/).transform(s => s.toLowerCase());
 export const Hash = z.string().regex(/^0x[0-9a-fA-F]{64}$/).transform(s => s.toLowerCase());
-const Height = z.string().regex(/^(0|[1-9][0-9]{0,18})$/).refine(s => BigInt(s) <= 9223372036854775807n);
-const Amount = z.string().regex(/^(0|[1-9][0-9]{0,77})$/).refine(s => BigInt(s) < 2n ** 256n);
+const Height = z.string().regex(/^(0|[1-9][0-9]{0,18})$/).pipe(z.string().refine(s => BigInt(s) <= 9223372036854775807n));
+const Amount = z.string().regex(/^(0|[1-9][0-9]{0,77})$/).pipe(z.string().refine(s => BigInt(s) < 2n ** 256n));
 export const BlockInput = z.object({
   chain: Chain, number: Height, hash: Hash, parentHash: Hash,
   transfers: z.array(z.object({
