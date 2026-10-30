@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url = env("DATABASE_URL")
+}
+model ChainState {
+  chain String @id
+  headNumber BigInt @default(-1)
+  headHash String
+  epoch Int @default(0)
+}
+model Block {
+  chain String
+  number BigInt
+  hash String
+  parentHash String
+  digest String
+  transfers Transfer[]
+  @@id([chain, number])
+  @@unique([chain, hash])
+}
+model Transfer {
+  id BigInt @id @default(autoincrement())
+  chain String
+  blockNumber BigInt
+  txHash String
+  logIndex Int
+  contract String
+  from String
+  to String
+  amount String
+  block Block @relation(fields: [chain, blockNumber], references: [chain, number], onDelete: Cascade)
+  @@unique([chain, txHash, logIndex])
+  @@index([chain, from, id])
+  @@index([chain, to, id])
+}
