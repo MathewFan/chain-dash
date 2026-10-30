@@ -6,7 +6,8 @@ export async function ingest(db: PrismaClient, block: Input) {
   for (let attempt = 0; ; attempt++) {
     try {
       return await db.$transaction(async tx => {
-        await tx.chainState.upsert({where: {chain: block.chain}, create: {chain: block.chain, headHash: ZERO}, update: {}});
+        await tx.$executeRaw`INSERT INTO "ChainState" (chain, "headHash")
+          VALUES (${block.chain}, ${ZERO}) ON CONFLICT (chain) DO NOTHING`;
         // One writer per chain. Serializable isolation also detects stale snapshots.
         await tx.$queryRaw`SELECT chain FROM "ChainState" WHERE chain = ${block.chain} FOR UPDATE`;
         const state = await tx.chainState.findUniqueOrThrow({where: {chain: block.chain}});
@@ -29,7 +30,10 @@ export async function ingest(db: PrismaClient, block: Input) {
       }, {isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 10000});
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
-        if (error.code === 'P2034' && attempt < 3) {
+        // Raw row-lock/insert statements surface PostgreSQL serialization failures
+        // as P2010, while ORM statements use P2034. Retry only these SQL states.
+        const rawConflict = error.code === 'P2010' && ['40001', '40P01'].includes(String(error.meta?.code));
+        if ((error.code === 'P2034' || rawConflict) && attempt < 3) {
           await new Promise(resolve => setTimeout(resolve, 10 * 2 ** attempt));
           continue;
         }

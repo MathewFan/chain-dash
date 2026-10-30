@@ -17,7 +17,7 @@ test('PostgreSQL atomic indexing, reorg rollback and snapshot pagination', async
   assert.equal(process.env.ALLOW_TEST_DB_RESET, '1', 'explicit disposable database opt-in required');
   const db = new PrismaClient();
   await db.block.deleteMany(); await db.chainState.deleteMany();
-  const app = await createApp(db, {ingestKey: key, cursorKey: key + 'cursor'});
+  const app = await createApp(db, {ingestKey: key, cursorKey: key + 'cursor', logger: true});
   const post = (body: unknown) => app.inject({method: 'POST', url: '/ingest/blocks', payload: body,
     headers: {authorization: 'Bearer ' + key}});
   const get = (cursor?: string, chain = 'ETH', wallet = address) => app.inject({method: 'GET',
@@ -57,6 +57,9 @@ test('PostgreSQL atomic indexing, reorg rollback and snapshot pagination', async
     assert.deepEqual(concurrent.map(r => r.statusCode), [200, 200]);
     assert.deepEqual(new Set(concurrent.map(r => r.json().status)), new Set(['appended', 'duplicate']));
     assert.equal(await db.transfer.count({where: {chain: 'ETH'}}), 3);
+    const cold = await Promise.all([post({...block(0,20,0), chain: 'ARB'}), post({...block(0,20,0), chain: 'ARB'})]);
+    assert.deepEqual(cold.map(r => r.statusCode), [200, 200]);
+    assert.deepEqual(new Set(cold.map(r => r.json().status)), new Set(['appended', 'duplicate']));
     assert.equal((await app.inject('/health')).statusCode, 200);
     console.log('Verified rollback, cross-chain identity, concurrent idempotency, reorg and pagination');
   } finally {
